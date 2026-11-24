@@ -115,6 +115,21 @@ export interface DistributionResponse {
   buckets: DistributionBucket[];
 }
 
+export interface PayrollTrendPoint {
+  month: string;
+  headcount: number;
+  total_payroll_usd: string;
+  average_salary_usd: string;
+}
+
+export interface PayrollTrendResponse {
+  months: number;
+  currency: string;
+  methodology_note: string;
+  items: PayrollTrendPoint[];
+}
+
+
 export interface SalaryOutlier {
   employee_id: number;
   full_name: string;

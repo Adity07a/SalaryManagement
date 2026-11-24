@@ -1,4 +1,3 @@
-
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
@@ -6,15 +5,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 
-
-# SQLAlchemy database engine
+# pool_pre_ping detects stale pooled connections before handing them to a request.
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
 )
 
-
-# Creates independent database sessions
 SessionLocal = sessionmaker(
     bind=engine,
     autoflush=False,
@@ -24,15 +20,8 @@ SessionLocal = sessionmaker(
 
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    Provides a database session to API endpoints.
-
-    The session is always closed after the request,
-    even when an exception occurs.
-    """
-
+    """Yield one request-scoped session and always close it afterwards."""
     db = SessionLocal()
-
     try:
         yield db
     finally:

@@ -1,34 +1,31 @@
-
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-# Project root: acme-salary-management/
+# backend/app/core/config.py -> repository's SalaryManagement directory.
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 class Settings(BaseSettings):
-    """
-    Central application configuration.
-
-    Values are loaded from environment variables first,
-    followed by the project's root .env file.
-    """
+    """Application settings loaded from environment variables or the root .env file."""
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
+        case_sensitive=False,
         extra="ignore",
     )
 
     app_name: str = "ACME Salary Management API"
-
     debug: bool = False
-
-    database_url: str = (
-        "postgresql+psycopg://acme:local_dev_password"
-        "@localhost:5432/acme_salary"
+    # repr=False prevents accidental disclosure when settings are logged or inspected.
+    database_url: str = Field(
+        default=(
+            "postgresql+psycopg://salary_management_user:local_dev_password"
+            "@localhost:5432/salary_management_db"
+        ),
+        repr=False,
     )
 
 

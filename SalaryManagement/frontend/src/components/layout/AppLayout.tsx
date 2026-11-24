@@ -3,10 +3,7 @@ import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
 
 import { Header } from "./Header";
-import {
-  DRAWER_WIDTH,
-  Sidebar,
-} from "./Sidebar";
+import { Sidebar } from "./Sidebar";
 
 export function AppLayout() {
   return (
@@ -20,15 +17,16 @@ export function AppLayout() {
         sx={{
           flexGrow: 1,
           minWidth: 0,
-          ml: `${DRAWER_WIDTH}px`,
-          pt: "64px",
+          pt: "68px",
         }}
       >
         <Box
           sx={{
-            maxWidth: 1600,
+            width: "100%",
+            maxWidth: 1800,
             mx: "auto",
-            p: { xs: 2, md: 4 },
+            px: { xs: 2, md: 3 },
+            py: { xs: 2, md: 2.5 },
           }}
         >
           <Outlet />

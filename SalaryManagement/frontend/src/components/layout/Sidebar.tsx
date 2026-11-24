@@ -46,8 +46,8 @@ export function Sidebar() {
         "& .MuiDrawer-paper": {
           width: DRAWER_WIDTH,
           boxSizing: "border-box",
-          top: "64px",
-          height: "calc(100% - 64px)",
+          top: "68px",
+          height: "calc(100% - 68px)",
           borderRight: 1,
           borderColor: "divider",
           p: 2,

@@ -4,6 +4,7 @@ import { apiRequest } from "./client";
 import type {
   DistributionResponse,
   OutliersResponse,
+  PayrollTrendResponse,
   SalaryGroupBy,
   SalaryStatsResponse,
   SummaryResponse,
@@ -57,4 +58,31 @@ export const analyticsApi = {
       { signal },
     );
   },
+  
+async getPayrollTrends(
+    months = 12,
+    signal?: AbortSignal,
+    filters?: {
+      country?: string;
+      department?: string;
+    },
+  ): Promise<PayrollTrendResponse> {
+    const query = new URLSearchParams({
+      months: String(months),
+    });
+
+    if (filters?.country) {
+      query.set("country", filters.country);
+    }
+
+    if (filters?.department) {
+      query.set("department", filters.department);
+    }
+
+    return apiRequest<PayrollTrendResponse>(
+      `/analytics/payroll-trends?${query}`,
+      { signal },
+    );
+  },
+
 };
