@@ -22,7 +22,7 @@ class InitialSalaryCreate(BaseModel):
 
     effective_from: date
 
-    @field_validator("currency")
+    @field_validator("currency", mode="before")
     @classmethod
     def normalize_currency(cls, value: str) -> str:
         currency = value.strip().upper()

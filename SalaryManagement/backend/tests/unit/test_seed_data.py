@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
@@ -6,8 +7,12 @@ from app.seed_data import (
     DEPARTMENT_PROFILES,
     EMPLOYMENT_FACTORS,
     OUTLIER_MULTIPLIERS,
+    SALARY_REVISION_MAX_PERCENT,
+    SALARY_REVISION_MIN_PERCENT,
+    SALARY_REVISION_MIN_TENURE_DAYS,
     SEED_AS_OF_DATE,
     SEED_EMPLOYEE_COUNT,
+    SalarySeed,
     SeedData,
     generate_seed_data,
 )
@@ -147,3 +152,67 @@ def test_seed_contains_salary_history_and_deliberate_outlier_cases(
             assert ratio > Decimal("2.5")
         else:
             assert ratio < Decimal("0.5")
+
+
+def test_optional_salary_revisions_are_valid_and_deterministic(
+    default_seed_data: SeedData,
+) -> None:
+    employee_by_email = {
+        employee["email"]: employee for employee in default_seed_data.employees
+    }
+
+    salary_records_by_email: dict[str, list[SalarySeed]] = {}
+
+    for salary in default_seed_data.salaries:
+        email = salary["employee_email"]
+        salary_records_by_email.setdefault(email, []).append(salary)
+
+    revision_count = 0
+
+    minimum_increase = Decimal(SALARY_REVISION_MIN_PERCENT) / Decimal("100")
+    maximum_increase = Decimal(SALARY_REVISION_MAX_PERCENT) / Decimal("100")
+    rounding_tolerance = Decimal("0.0001")
+
+    for email, records in salary_records_by_email.items():
+        employee = employee_by_email[email]
+
+        employee_number = int(email.split("@", maxsplit=1)[0].removeprefix("employee"))
+
+        has_previous_salary = employee_number % 5 == 0 and employee[
+            "hire_date"
+        ] <= date(2024, 1, 1)
+
+        original_record_count = 2 if has_previous_salary else 1
+
+        records.sort(key=lambda record: record["effective_from"])
+
+        revisions_for_employee = len(records) - original_record_count
+
+        assert revisions_for_employee in (0, 1)
+
+        if revisions_for_employee == 0:
+            continue
+
+        revision_count += 1
+
+        current_salary = records[-2]
+        revision = records[-1]
+
+        assert revision["effective_from"] > current_salary["effective_from"]
+        assert revision["effective_from"] >= (
+            employee["hire_date"] + timedelta(days=SALARY_REVISION_MIN_TENURE_DAYS)
+        )
+        assert revision["effective_from"] <= SEED_AS_OF_DATE
+
+        increase = (revision["amount"] / current_salary["amount"]) - Decimal("1.00")
+
+        assert (
+            minimum_increase - rounding_tolerance
+            <= increase
+            <= maximum_increase + rounding_tolerance
+        )
+
+    # The configured revision probability is 45%.
+    # This broad range avoids making the test sensitive
+    # to minor implementation changes.
+    assert 3_500 <= revision_count <= 5_500

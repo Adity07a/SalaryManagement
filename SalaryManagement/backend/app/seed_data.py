@@ -13,7 +13,12 @@ from faker import Faker
 SEED_RANDOM_SEED = 20261123
 SEED_EMPLOYEE_COUNT = 10_000
 SEED_EMAIL_DOMAIN = "salary-management.test"
-SEED_AS_OF_DATE = date(2026, 10, 31)
+SEED_AS_OF_DATE = date(2026, 11, 24)
+
+SALARY_REVISION_PROBABILITY = 0.45
+SALARY_REVISION_MIN_PERCENT = 3
+SALARY_REVISION_MAX_PERCENT = 8
+SALARY_REVISION_MIN_TENURE_DAYS = 365
 
 MONEY_QUANTUM = Decimal("0.01")
 
@@ -198,6 +203,7 @@ def generate_seed_data(
         raise ValueError("employee_count must be greater than zero")
 
     rng = random.Random(SEED_RANDOM_SEED)
+    revision_rng = random.Random(SEED_RANDOM_SEED + 1)
 
     faker = Faker("en_US")
     faker.seed_instance(SEED_RANDOM_SEED)
@@ -305,7 +311,7 @@ def generate_seed_data(
                 current_salary_effective_date,
             )
 
-        # Current salary is always inserted as a separate record.
+        # Insert the current salary as a separate historical record.
         salaries.append(
             {
                 "employee_email": email,
@@ -314,6 +320,42 @@ def generate_seed_data(
                 "effective_from": current_effective_from,
             }
         )
+
+        # Generate an optional merit-based salary revision.
+        # The revision must occur after the current salary's effective date.
+        revision_start_date = max(
+            current_effective_from + timedelta(days=1),
+            hire_date + timedelta(days=SALARY_REVISION_MIN_TENURE_DAYS),
+        )
+
+        if (
+            revision_start_date <= SEED_AS_OF_DATE
+            and revision_rng.random() < SALARY_REVISION_PROBABILITY
+        ):
+            available_days = (SEED_AS_OF_DATE - revision_start_date).days + 1
+
+            revision_date = revision_start_date + timedelta(
+                days=revision_rng.randrange(available_days)
+            )
+
+            revision_percent = Decimal(
+                revision_rng.randint(
+                    SALARY_REVISION_MIN_PERCENT, SALARY_REVISION_MAX_PERCENT
+                )
+            ) / Decimal("100")
+
+            revised_amount = _quantize_money(
+                current_amount * (Decimal("1.00") + revision_percent)
+            )
+
+            salaries.append(
+                {
+                    "employee_email": email,
+                    "amount": revised_amount,
+                    "currency": country.currency,
+                    "effective_from": revision_date,
+                }
+            )
 
     # One exchange-rate record per currency.
     exchange_rates: list[ExchangeRateSeed] = []
